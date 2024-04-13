@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr  9 09:13:04 2024
+
+@author: mesh
+"""
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Load your dataset
+file_path = 'UAV55555.csv'  # Make sure to update this path
+data = pd.read_csv(file_path)
+
+# Prepare the data
+X = data.drop(columns=['Overall_Success', 'Mission_ID'])
+
+# Assuming 'Overall_Success' is your target variable
+y = data['Overall_Success']
+
+# Add noise to the features
+noise_factor = 0.05  # 5% noise
+noise = (np.random.rand(*X.shape) - 0.5) * 2 * noise_factor
+X_noisy = X + (noise * X)
+
+# Split the dataset into training and testing sets
+#X_train_noisy, X_test_noisy, y_train, y_test = train_test_split(X_noisy, y, test_size=0.30, random_state=42)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
+
+# Initialize and train the Random Forest Classifier
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_classifier.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred_noisy = rf_classifier.predict(X_test)
+
+# Evaluate the model
+accuracy_noisy = accuracy_score(y_test, y_pred_noisy)
+precision_noisy = precision_score(y_test, y_pred_noisy)
+recall_noisy = recall_score(y_test, y_pred_noisy)
+f1_noisy = f1_score(y_test, y_pred_noisy)
+conf_matrix_noisy = confusion_matrix(y_test, y_pred_noisy)
+
+# Calculate the ROC curve and AUC
+y_pred_proba_noisy = rf_classifier.predict_proba(X_test)[::,1]
+fpr_noisy, tpr_noisy, _ = roc_curve(y_test,  y_pred_proba_noisy)
+auc_score_noisy = auc(fpr_noisy, tpr_noisy)
+
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr_noisy, tpr_noisy, color='darkorange', lw=2, label=f'ROC curve (area = {auc_score_noisy:.2f})')
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+# Print out the metrics
+print(f"Accuracy: {accuracy_noisy}")
+print(f"Precision: {precision_noisy}")
+print(f"Recall: {recall_noisy}")
+print(f"F1 Score: {f1_noisy}")
+print(f"Confusion Matrix: \n{conf_matrix_noisy}")
